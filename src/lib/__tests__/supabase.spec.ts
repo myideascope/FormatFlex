@@ -93,20 +93,6 @@ describe('supabase client module', () => {
     expect(mod.supabase).toEqual({ __mockClient__: true, url, key })
   })
 
-  it('exports a User type shape - runtime sanity check of keys', async () => {
-    // Provide envs so module loads
-    setEnv({ VITE_SUPABASE_URL: 'https://example.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon-123' })
-    const mod = await importModule()
-    // We can’t assert TypeScript-only types at runtime. Instead, we validate expected keys via a sample object.
-    const sampleUser = { id: 'u1', email: 'u1@example.com', created_at: new Date().toISOString() }
-
-    // Validate the shape we expect consumers to rely on.
-    expect(Object.keys(sampleUser).sort()).toEqual(['created_at', 'email', 'id'].sort())
-
-    // Additional usage sanity: confirm supabase is created and usable (per mock)
-    expect(mod.supabase).toHaveProperty('__mockClient__', true)
-  })
-
   it('handles unexpected non-string env values by passing them through to createClient (edge case)', async () => {
     // Some environments may coerce values; ensure the code still forwards them.
     // Our mock will capture the forwarded values verbatim.
