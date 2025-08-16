@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { 
   BookOpen, 
   Zap, 
@@ -16,8 +17,36 @@ import {
   Share2,
   Globe
 } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
+import AuthModal from './components/AuthModal';
+import UserMenu from './components/UserMenu';
+import InteractiveDemo from './components/InteractiveDemo';
 
 function App() {
+  const { user } = useAuth();
+  const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'signin' | 'signup' }>({
+    isOpen: false,
+    mode: 'signin'
+  });
+
+  const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
+    setAuthModal({ isOpen: true, mode });
+  };
+
+  const closeAuthModal = () => {
+    setAuthModal({ isOpen: false, mode: 'signin' });
+  };
+
+  // Listen for auth events from child components
+  React.useEffect(() => {
+    const handleOpenAuth = (event: CustomEvent) => {
+      openAuthModal(event.detail.mode);
+    };
+
+    window.addEventListener('openAuth', handleOpenAuth as EventListener);
+    return () => window.removeEventListener('openAuth', handleOpenAuth as EventListener);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -34,9 +63,16 @@ function App() {
               <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
               <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</a>
               <a href="#roadmap" className="text-gray-600 hover:text-blue-600 transition-colors">Roadmap</a>
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg hover:scale-105">
-                Get Started
-              </button>
+              {user ? (
+                <UserMenu />
+              ) : (
+                <button 
+                  onClick={() => openAuthModal('signup')}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg hover:scale-105"
+                >
+                  Get Started
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -65,10 +101,20 @@ function App() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <button className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-xl hover:scale-105 flex items-center">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </button>
+              {user ? (
+                <button className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-xl hover:scale-105 flex items-center">
+                  Upload Manuscript
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => openAuthModal('signup')}
+                  className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-xl hover:scale-105 flex items-center"
+                >
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </button>
+              )}
               <div className="text-gray-500 text-sm">
                 $10/month • Cancel anytime
               </div>
@@ -92,6 +138,9 @@ function App() {
           </div>
         </div>
       </section>
+
+      {/* Interactive Demo */}
+      <InteractiveDemo />
 
       {/* How It Works */}
       <section className="py-20 bg-gray-50">
@@ -241,9 +290,18 @@ function App() {
                 </li>
               </ul>
               
-              <button className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-lg">
-                Start Free Trial
-              </button>
+              {user ? (
+                <button className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-lg">
+                  Access Dashboard
+                </button>
+              ) : (
+                <button 
+                  onClick={() => openAuthModal('signup')}
+                  className="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-lg"
+                >
+                  Start Free Trial
+                </button>
+              )}
             </div>
           </div>
           
@@ -320,9 +378,18 @@ function App() {
             Join authors who've eliminated formatting hassle and focus on what matters - their writing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:shadow-xl hover:scale-105">
-              Start Free Trial
-            </button>
+            {user ? (
+              <button className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:shadow-xl hover:scale-105">
+                Upload Manuscript
+              </button>
+            ) : (
+              <button 
+                onClick={() => openAuthModal('signup')}
+                className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:shadow-xl hover:scale-105"
+              >
+                Start Free Trial
+              </button>
+            )}
             <button className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all">
               See Example
             </button>
@@ -374,6 +441,13 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={closeAuthModal}
+        initialMode={authModal.mode}
+      />
     </div>
   );
 }
