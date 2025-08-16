@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Wand2, Download, ArrowRight, FileText, CheckCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const sampleText = `Chapter 1: The Beginning
 
@@ -29,13 +30,20 @@ THE JOURNEY
 As the adventure continues, new challenges emerge. The path ahead is uncertain but filled with promise.`;
 
 export default function InteractiveDemo() {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [email, setEmail] = useState('');
   const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const handleDemo = () => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    
     setIsProcessing(true);
     setCurrentStep(1);
     
@@ -50,6 +58,10 @@ export default function InteractiveDemo() {
   };
 
   const handleDownload = () => {
+    if (!user) {
+      setShowAuthPrompt(true);
+      return;
+    }
     setShowEmailCapture(true);
   };
 
@@ -98,7 +110,7 @@ export default function InteractiveDemo() {
                     className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all hover:shadow-lg hover:scale-105 flex items-center mx-auto"
                   >
                     <Wand2 className="h-5 w-5 mr-2" />
-                    Transform with AI
+                    {user ? 'Transform with AI' : 'Try Demo (Sign up required)'}
                   </button>
                 )}
                 {isProcessing && (
@@ -147,44 +159,66 @@ export default function InteractiveDemo() {
             </div>
           </div>
 
-          {/* Email Capture Modal */}
-          {showEmailCapture && (
+          {/* Auth Prompt Modal */}
+          {showAuthPrompt && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-2xl p-8 max-w-md w-full">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  Get Your Free Sample
+                  Sign Up to Try Demo
                 </h3>
                 <p className="text-gray-600 mb-6 text-center">
-                  Enter your email to download the formatted sample and start your free trial.
+                  Create a free account to experience FormatFlex's AI-powered manuscript formatting.
                 </p>
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmailCapture(false)}
-                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                    >
-                      Get Sample + Trial
-                    </button>
-                  </div>
-                </form>
-                <p className="text-xs text-gray-500 mt-4 text-center">
-                  No spam. Unsubscribe anytime. Start formatting professionally today.
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAuthPrompt(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAuthPrompt(false);
+                      // This would trigger the auth modal in the parent component
+                      window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'signup' } }));
+                    }}
+                    className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                  >
+                    Sign Up Free
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Email Capture Modal */}
+          {showEmailCapture && user && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                  Download Formatted Sample
+                </h3>
+                <p className="text-gray-600 mb-6 text-center">
+                  Your formatted sample is ready for download.
                 </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEmailCapture(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Simulate download
+                      alert('Sample downloaded! Check your downloads folder.');
+                      setShowEmailCapture(false);
+                    }}
+                    className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                  >
+                    Download Sample
+                  </button>
+                </div>
               </div>
             </div>
           )}
