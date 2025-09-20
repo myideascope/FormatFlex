@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+import { mockAuth } from '../lib/mockAuth';
+
+interface User {
+  id: string;
+  email: string;
+  created_at: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: any | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -15,47 +20,80 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Check for existing session on mount
+    const checkSession = async () => {
+      try {
+        const currentUser = await mockAuth.getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+          setSession({ user: currentUser, access_token: 'mock-token' });
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    checkSession();
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      setLoading(true);
+      const result = await mockAuth.signUp(email, password);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      if (result.user) {
+        setUser(result.user);
+        setSession({ user: result.user, access_token: 'mock-token' });
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'An unexpected error occurred' } };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      setLoading(true);
+      const result = await mockAuth.signIn(email, password);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      if (result.user) {
+        setUser(result.user);
+        setSession({ user: result.user, access_token: 'mock-token' });
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'An unexpected error occurred' } };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await mockAuth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const value = {
